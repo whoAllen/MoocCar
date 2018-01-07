@@ -1,7 +1,9 @@
-package com.languo.mooccar;
+package com.languo.mooccar.main;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+
+import com.languo.mooccar.R;
 
 public class MainActivity extends AppCompatActivity {
 
