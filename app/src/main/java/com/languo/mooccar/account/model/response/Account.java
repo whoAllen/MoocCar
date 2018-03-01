@@ -1,4 +1,4 @@
-package com.languo.mooccar.account.response;
+package com.languo.mooccar.account.model.response;
 
 /**
  * Created by YuLiang on 2018/1/28.

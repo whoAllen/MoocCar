@@ -1,4 +1,4 @@
-package com.languo.mooccar.account;
+package com.languo.mooccar.account.view;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
@@ -11,7 +11,6 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -30,7 +29,6 @@ import com.languo.mooccar.common.http.impl.BaseResponse;
 import com.languo.mooccar.common.http.impl.OkHttpClientImpl;
 
 import java.lang.ref.SoftReference;
-import java.lang.ref.WeakReference;
 
 /**
  * Created by YuLiang on 2018/1/20.

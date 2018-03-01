@@ -1,4 +1,4 @@
-package com.languo.mooccar.account;
+package com.languo.mooccar.account.view;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -13,13 +13,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.languo.mooccar.MoocCarApplication;
 import com.languo.mooccar.R;
-import com.languo.mooccar.account.response.Account;
-import com.languo.mooccar.account.response.LoginResponse;
+import com.languo.mooccar.account.model.response.Account;
+import com.languo.mooccar.account.model.response.LoginResponse;
 import com.languo.mooccar.common.http.IHttpClient;
 import com.languo.mooccar.common.http.IRequest;
 import com.languo.mooccar.common.http.IResponse;

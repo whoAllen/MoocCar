@@ -1,4 +1,4 @@
-package com.languo.mooccar.account.response;
+package com.languo.mooccar.account.model.response;
 
 import com.languo.mooccar.common.http.biz.BaseBizResponse;
 

@@ -1,8 +1,7 @@
-package com.languo.mooccar.account;
+package com.languo.mooccar.account.view;
 
 import android.app.Dialog;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.text.Editable;
@@ -37,8 +36,9 @@ public class PhoneInputDialog extends Dialog {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        LayoutInflater layoutInflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        mRoot = layoutInflater.inflate(R.layout.dialog_phone_input,null);
+//        LayoutInflater layoutInflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+//        mRoot = layoutInflater.inflate(R.layout.dialog_phone_input,null);
+        mRoot = LayoutInflater.from(getContext()).inflate(R.layout.dialog_phone_input,null);
         setContentView(mRoot);
         initListener();
     }
