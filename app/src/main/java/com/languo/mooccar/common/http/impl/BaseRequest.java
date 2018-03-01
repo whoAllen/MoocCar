@@ -2,6 +2,7 @@ package com.languo.mooccar.common.http.impl;
 
 import com.google.gson.Gson;
 import com.languo.mooccar.common.http.IRequest;
+import com.languo.mooccar.common.http.api.API;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,8 +28,8 @@ public class BaseRequest implements IRequest {
         this.url = url;
         header = new HashMap<>();
         body = new HashMap<>();
-        header.put("Application-Id", "myTaxiID");
-        header.put("API-Key", "myTaxiKey");
+        header.put("X-Bmob-Application-Id", API.Config.getAppId());
+        header.put("X-Bmob-REST-API-Key", API.Config.getAppKey());
     }
 
     @Override
@@ -48,7 +49,7 @@ public class BaseRequest implements IRequest {
 
     @Override
     public String getUrl() {
-        if(GET.equals(url)) {
+        if(GET.equals(method)) {
             //组装 GET 请求参数
             for(String key : body.keySet()) {
                 url = url.replace("${" + key + "}", body.get(key).toString());

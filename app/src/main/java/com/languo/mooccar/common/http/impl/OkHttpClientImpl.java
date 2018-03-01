@@ -79,7 +79,6 @@ public class OkHttpClientImpl implements IHttpClient {
             commonResponse.setCode(commonResponse.STATE_UNKNOWN_ERROR);
             commonResponse.setData(e.getMessage());
         }
-
         return commonResponse;
     }
 }

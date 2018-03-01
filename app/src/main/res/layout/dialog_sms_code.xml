@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:ver="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/close"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/btn_close"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:layout_margin="@dimen/activity_vertical_margin"
+            />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/activity_horizontal_margin">
+
+        <TextView
+            android:id="@+id/dialog_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/sms_code_input"
+            style="@style/Dialog.Title"
+            android:gravity="center"
+            />
+
+        <TextView
+            android:id="@+id/dialog_phone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/sms_code_send_phone"
+            android:textColor="@color/color_text_normal"
+            android:gravity="center"
+            />
+
+        <Button
+            android:id="@+id/btn_resend"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/resend"
+            android:layout_marginTop="12dp"
+            android:layout_gravity="center_horizontal"
+            android:enabled="false"
+            android:layout_marginBottom="12dp"
+            android:textSize="@dimen/text_size_small"
+            />
+
+        <com.dalimao.corelibrary.VerificationCodeInput
+            android:id="@+id/dialog_verificationCodeInput"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            ver:box="4"
+            ver:box_bg_normal="@drawable/verification_edit_bg_normal"
+            ver:box_bg_focus="@drawable/verification_edit_bg_focus"
+            ver:child_h_padding="5dp"
+            ver:inputType="number"
+            android:layout_centerInParent="true"
+            ></com.dalimao.corelibrary.VerificationCodeInput>
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:visibility="gone"
+            android:id="@+id/loading"
+            />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/Error"
+            android:text="@string/sms_code_error"
+            android:id="@+id/error"
+            android:padding="12dp"
+            android:layout_gravity="center_horizontal"
+            android:visibility="gone"
+            />
+
+    </LinearLayout>
+
+
+</LinearLayout>
