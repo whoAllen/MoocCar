@@ -18,7 +18,12 @@ import android.widget.Toast;
 
 import com.dalimao.corelibrary.VerificationCodeInput;
 import com.google.gson.Gson;
+import com.languo.mooccar.MoocCarApplication;
 import com.languo.mooccar.R;
+import com.languo.mooccar.account.model.AccountManagerImpl;
+import com.languo.mooccar.account.model.IAccountManager;
+import com.languo.mooccar.account.presenter.ISmsCodeDialogPresenter;
+import com.languo.mooccar.account.presenter.SmsCodeDialogPresenterImpl;
 import com.languo.mooccar.common.http.IHttpClient;
 import com.languo.mooccar.common.http.IRequest;
 import com.languo.mooccar.common.http.IResponse;
@@ -27,6 +32,8 @@ import com.languo.mooccar.common.http.biz.BaseBizResponse;
 import com.languo.mooccar.common.http.impl.BaseRequest;
 import com.languo.mooccar.common.http.impl.BaseResponse;
 import com.languo.mooccar.common.http.impl.OkHttpClientImpl;
+import com.languo.mooccar.common.storage.SharedPreferencesDao;
+import com.languo.mooccar.common.util.ToastUtil;
 
 import java.lang.ref.SoftReference;
 
@@ -34,7 +41,7 @@ import java.lang.ref.SoftReference;
  * Created by YuLiang on 2018/1/20.
  */
 
-public class SmsCodeDialog extends Dialog {
+public class SmsCodeDialog extends Dialog implements ISmsCodeDialogView{
 
     private View mRoot;
     private String phone;
@@ -44,17 +51,7 @@ public class SmsCodeDialog extends Dialog {
     private ProgressBar progressBar;
     private TextView tvError;
 
-    private IHttpClient httpClient;
-    private MyHandler myHandler;
-
-    private static final String TAG = "SmsCodeDialog";
-    private static final int SMS_SEND_SUC = 1;
-    private static final int SMS_SEND_FAIL = -1;
-    private static final int SMS_CHECK_SUC = 2;
-    private static final int SMS_CHECK_FAIL = -2;
-    private static final int USER_EXIST = 3;
-    private static final int USER_NOT_EXIST = -3;
-    private static final int SMS_SERVER_FAIL = 100;
+    private SmsCodeDialogPresenterImpl presenter;
 
     /**
      * 倒计时类
@@ -75,48 +72,6 @@ public class SmsCodeDialog extends Dialog {
         }
     };
 
-    /**
-     *  Handler 类，修改 UI
-     */
-    static class MyHandler extends Handler {
-        SoftReference<SmsCodeDialog> smsCodeDialogSoftReference;
-        public MyHandler(SmsCodeDialog smsCodeDialog) {
-            smsCodeDialogSoftReference = new SoftReference<SmsCodeDialog>(smsCodeDialog);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            SmsCodeDialog smsCodeDialog = smsCodeDialogSoftReference.get();
-            if(smsCodeDialog == null) {
-                return;
-            }
-            //处理 UI 变化
-            switch (msg.what) {
-                case SMS_SEND_SUC:
-                    smsCodeDialog.countDownTimer.start();
-                    break;
-                case SMS_SEND_FAIL:
-                    Toast.makeText(smsCodeDialog.getContext(), R.string.sms_send_fail, Toast.LENGTH_SHORT).show();
-                    break;
-                case SMS_CHECK_SUC:
-                    smsCodeDialog.showVerifyState(true);
-                    break;
-                case SMS_CHECK_FAIL:
-                    smsCodeDialog.showVerifyState(false);
-                    break;
-                case USER_EXIST:
-                    smsCodeDialog.showUserExist(true);
-                    break;
-                case USER_NOT_EXIST:
-                    smsCodeDialog.showUserExist(false);
-                    break;
-                case SMS_SERVER_FAIL:
-                    Toast.makeText(smsCodeDialog.getContext(), R.string.error_server, Toast.LENGTH_SHORT);
-                    break;
-            }
-        }
-    }
-
     public SmsCodeDialog(@NonNull Context context, String phone) {
         this(context, R.style.Dialog, phone);
     }
@@ -124,6 +79,14 @@ public class SmsCodeDialog extends Dialog {
     public SmsCodeDialog(@NonNull Context context, int themeResId, String phone) {
         super(context, themeResId);
         this.phone = phone;
+
+        IHttpClient httpClient = new OkHttpClientImpl();
+        SharedPreferencesDao preferencesDao = new SharedPreferencesDao(
+                MoocCarApplication.getApplication(),
+                SharedPreferencesDao.FILE_ACCOUNT);
+        AccountManagerImpl accountManager = new AccountManagerImpl(httpClient, preferencesDao);
+        presenter = new SmsCodeDialogPresenterImpl(this, accountManager);
+
     }
 
     @Override
@@ -138,48 +101,18 @@ public class SmsCodeDialog extends Dialog {
         dialogVerificationCodeInput = (VerificationCodeInput) mRoot.findViewById(R.id.dialog_verificationCodeInput);
         progressBar = (ProgressBar) mRoot.findViewById(R.id.loading);
 
-        httpClient = new OkHttpClientImpl();
-        myHandler = new MyHandler(this);
-
         //设置文字，验证码已经下发
         String codeIsSend = getContext().getString(R.string.sending);
         tvPhone.setText(String.format(codeIsSend, phone));
         initListener();
         requestCode();
-
-
     }
 
     /**
      * 请求下发验证码
      */
     private void requestCode() {
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                IRequest request = new BaseRequest(API.Config.getDomain() + API.GET_SMS_CODE);
-                request.setBody("phone", phone);
-                IResponse baseResponse =  httpClient.get(request, false);
-                Log.i(TAG, "run: " + request.getUrl());
-                Log.i(TAG, "run: " + baseResponse.getData());
-
-                if(baseResponse.getCode() == BaseResponse.STATE_OK) {
-                    BaseBizResponse bizResponse = new Gson().fromJson(baseResponse.getData(), BaseBizResponse.class);
-                    if(bizResponse.getCode() == BaseBizResponse.STATE_OK) {
-                        //请求成功
-                        myHandler.sendEmptyMessage(SMS_SEND_SUC);
-                    } else {
-                        //请求失败
-                        myHandler.sendEmptyMessage(SMS_SEND_FAIL);
-                    }
-                } else {
-                    //失败
-                    myHandler.sendEmptyMessage(SMS_SEND_FAIL);
-                }
-            }
-        }).start();
-
+        presenter.requestSendSmsCode(phone);
     }
 
 
@@ -215,88 +148,63 @@ public class SmsCodeDialog extends Dialog {
      * 向服务端验证 验证码
      */
     private void commit(final String code) {
-        showLoading();
-
-        new Thread() {
-            @Override
-            public void run() {
-                String url = API.Config.getDomain() + API.CHECK_SMS_CODE;
-                IRequest request = new BaseRequest(url);
-                request.setBody("phone", phone);
-                request.setBody("code", code);
-                IResponse response = httpClient.get(request, false);
-                Log.d(TAG, response.getData());
-                if (response.getCode() == BaseResponse.STATE_OK) {
-                    BaseBizResponse bizRes =
-                            new Gson().fromJson(response.getData(), BaseBizResponse.class);
-                    if (bizRes.getCode() == BaseBizResponse.STATE_OK) {
-                        myHandler.sendEmptyMessage(SMS_CHECK_SUC);
-                    } else  {
-                        myHandler.sendEmptyMessage(SMS_CHECK_FAIL);
-                    }
-                } else {
-                    myHandler.sendEmptyMessage(SMS_CHECK_FAIL);
-                }
-
-            }
-        }.start();
+        presenter.requestCheckSmsCode(phone, code);
     }
 
     /**
      * 显示进度
      */
-    private void showLoading() {
+    @Override
+    public void showLoading() {
         progressBar.setVisibility(View.VISIBLE);
     }
 
-    /**
-     * 对应的验证码验证结果
-     * @param suc
-     */
-    private void showVerifyState(boolean suc) {
-        if(suc) {
-            //验证成功
-            progressBar.setVisibility(View.GONE);
-            tvError.setVisibility(View.GONE);
-            //检查用户是否存在
-            checkUserExist();
-        } else {
-            //验证失败
-            progressBar.setVisibility(View.GONE);
-            tvError.setVisibility(View.VISIBLE);
-            dialogVerificationCodeInput.setEnabled(true);
+    @Override
+    public void showError(int code, String msg) {
+        progressBar.setVisibility(View.GONE);
+        switch (code) {
+            case IAccountManager.SMS_SEND_FAIL:
+                ToastUtil.show(getContext(), getContext().getString(R.string.sms_send_fail));
+                break;
+            case IAccountManager.SMS_CHECK_FAIL:
+                //提示验证码错误
+                tvError.setVisibility(View.VISIBLE);
+                dialogVerificationCodeInput.setEnabled(true);
+                break;
+            case IAccountManager.SERVER_FAIL:
+                ToastUtil.show(getContext(), getContext().getString(R.string.error_server));
+                break;
         }
     }
 
-    /**
-     * 向服务端发送请求，验证用户是否存在
-     */
-    private void checkUserExist() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                IRequest request = new BaseRequest(API.Config.getDomain() + API.CHECK_USER_EXIST);
-                request.setBody("phone", phone);
-                IResponse response = httpClient.get(request, false);
-                Log.i(TAG, "run: " + response.getData());
-                if(response.getCode() == BaseResponse.STATE_OK) {
-                    BaseBizResponse baseBizResponse = new Gson().fromJson(response.getData(), BaseBizResponse.class);
-                    if(baseBizResponse.getCode() == BaseBizResponse.STATE_USER_EXIST) {
-                        myHandler.sendEmptyMessage(USER_EXIST);
-                    } else if(baseBizResponse.getCode() == BaseBizResponse.STATE_USER_NOT_EXIST) {
-                        myHandler.sendEmptyMessage(USER_NOT_EXIST);
-                    }
-                } else {
-                        myHandler.sendEmptyMessage(SMS_SERVER_FAIL);
-                }
-            }
-        }).start();
+    @Override
+    public void showCountDownTimer() {
+        tvPhone.setText(String.format(getContext()
+                .getString(R.string.sms_code_send_phone), phone));
+        countDownTimer.start();
+        btReSend.setEnabled(false);
+    }
+
+    @Override
+    public void showSmsCodeCheckState(boolean b) {
+        if (!b) {
+            //提示验证码错误
+            tvError.setVisibility(View.VISIBLE);
+            dialogVerificationCodeInput.setEnabled(true);
+            progressBar.setVisibility(View.GONE);
+        } else {
+
+            tvError.setVisibility(View.GONE);
+            progressBar.setVisibility(View.VISIBLE);
+            presenter.requestCheckUserExist(phone);
+        }
     }
 
     /**
      * 显示用户是否存在的反应
      */
-    private void showUserExist(boolean exist) {
+    @Override
+    public void showUserExist(boolean exist) {
         dismiss();
         if(exist) {
             //用户存在 登录

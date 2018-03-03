@@ -9,7 +9,7 @@ import android.os.Bundle;
 import android.widget.ImageView;
 
 import com.languo.mooccar.R;
-import com.languo.mooccar.main.MainActivity;
+import com.languo.mooccar.main.view.MainActivity;
 
 public class SplashActivity extends AppCompatActivity {
 

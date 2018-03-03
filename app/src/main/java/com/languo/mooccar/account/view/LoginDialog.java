@@ -16,7 +16,10 @@ import android.widget.TextView;
 import com.google.gson.Gson;
 import com.languo.mooccar.MoocCarApplication;
 import com.languo.mooccar.R;
+import com.languo.mooccar.account.model.AccountManagerImpl;
+import com.languo.mooccar.account.model.IAccountManager;
 import com.languo.mooccar.account.model.response.LoginResponse;
+import com.languo.mooccar.account.presenter.LoginDialogPresenterImpl;
 import com.languo.mooccar.common.http.IHttpClient;
 import com.languo.mooccar.common.http.IRequest;
 import com.languo.mooccar.common.http.IResponse;
@@ -34,82 +37,16 @@ import java.lang.ref.SoftReference;
  * Created by YuLiang on 2018/1/28.
  */
 
-public class LoginDialog extends Dialog {
+public class LoginDialog extends Dialog implements ILoginDialogView{
 
     private static final String TAG = "LoginDialog";
-    private static final int LOGIN_SUC = 1;
-    private static final int SERVER_FAIL = 2;
-    private static final int PW_ERR = 4;
     private TextView mPhone;
     private EditText mPw;
     private Button mBtnConfirm;
     private View mLoading;
     private TextView mTips;
     private String phone;
-    private IHttpClient httpClient;
-    private MyHandler myHandler;
-
-    static class MyHandler extends Handler{
-        static SoftReference<LoginDialog> softReference;
-        public MyHandler(LoginDialog loginDialog) {
-            softReference = new SoftReference<LoginDialog>(loginDialog);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            LoginDialog loginDialog = softReference.get();
-            if(loginDialog == null) {
-                return;
-            }
-
-            switch (msg.what) {
-                case LOGIN_SUC:
-                    loginDialog.showLoginSuc();
-                    break;
-                case  SERVER_FAIL:
-                    loginDialog.showServerError();
-                    break;
-                case PW_ERR:
-                    loginDialog.showPasswordError();
-                    break;
-            }
-        }
-    }
-
-    /**
-     * 密码错误
-     */
-    private void showPasswordError() {
-        showOrHideLoading(false);
-        mTips.setVisibility(View.VISIBLE);
-        mTips.setTextColor(getContext().getResources().getColor(R.color.error_red));
-        mTips.setText(getContext().getString(R.string.password_error));
-    }
-
-    /**
-     * 登录出错
-     */
-    private void showServerError() {
-        showOrHideLoading(false);
-        mTips.setVisibility(View.VISIBLE);
-        mTips.setTextColor(getContext().getResources().getColor(R.color.error_red));
-        mTips.setText(getContext().getString(R.string.error_server));
-    }
-
-
-
-    /**
-     * 登录成功
-     */
-    private void showLoginSuc() {
-        mLoading.setVisibility(View.GONE);
-        mBtnConfirm.setVisibility(View.GONE);
-        mTips.setVisibility(View.VISIBLE);
-        mTips.setTextColor(getContext().getResources().getColor(R.color.color_text_normal));
-        mTips.setText(getContext().getString(R.string.login_suc));
-        ToastUtil.show(getContext(), getContext().getString(R.string.login_suc));
-        dismiss();
-    }
+    private LoginDialogPresenterImpl loginDialogPresenter;
 
     public LoginDialog(@NonNull Context context, String phone) {
         this(context, R.style.Dialog, phone);
@@ -118,9 +55,12 @@ public class LoginDialog extends Dialog {
     public LoginDialog(@NonNull Context context, int themeResId, String phone) {
         super(context, themeResId);
         this.phone = phone;
-
-        httpClient = new OkHttpClientImpl();
-        myHandler = new MyHandler(this);
+        IHttpClient httpClient = new OkHttpClientImpl();
+        SharedPreferencesDao preferencesDao = new SharedPreferencesDao(
+                MoocCarApplication.getApplication(),
+                SharedPreferencesDao.FILE_ACCOUNT);
+        AccountManagerImpl accountManager = new AccountManagerImpl(httpClient, preferencesDao);
+        loginDialogPresenter = new LoginDialogPresenterImpl(this, accountManager);
     }
 
     @Override
@@ -162,41 +102,43 @@ public class LoginDialog extends Dialog {
     private void submit() {
         //显示 等待
         showOrHideLoading(true);
+        loginDialogPresenter.requestLogin(phone, mPw.getText().toString());
+    }
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String url = API.Config.getDomain() + API.LOGIN;
-                IRequest request = new BaseRequest(url);
-                request.setBody("phone", phone);
-                String password = mPw.getText().toString();
-                request.setBody("password", password);
+    @Override
+    public void showLoading() {
+        showOrHideLoading(true);
+    }
 
-                IResponse response = httpClient.post(request, false);
-                Log.i(TAG, "run: " + response.getData());
-                if(response.getCode() == BaseBizResponse.STATE_OK) {
-                    LoginResponse loginResponse = new Gson().fromJson(response.getData(), LoginResponse.class);
-                    if(loginResponse.getCode() == BaseBizResponse.STATE_OK) {
-                        //登录成功，保存数据
-                        //TODO: 加密存储
-                        SharedPreferencesDao sharedPreferencesDao = new SharedPreferencesDao(MoocCarApplication.getApplication(), SharedPreferencesDao.FILE_ACCOUNT);
-                        sharedPreferencesDao.save(SharedPreferencesDao.KEY_ACCOUNT, loginResponse.getData());
-
-                        //通知 UI
-                        myHandler.sendEmptyMessage(LOGIN_SUC);
-                    } else if(loginResponse.getCode() == BaseBizResponse.STATE_PW_ERR) {
-                        //密码错误
-                        myHandler.sendEmptyMessage(PW_ERR);
-                    } else {
-                        //其他错误
-                        myHandler.sendEmptyMessage(SERVER_FAIL);
-                    }
-                } else {
-                    //请求失败
-                    myHandler.sendEmptyMessage(SERVER_FAIL);
-                }
-            }
-        }).start();
+    @Override
+    public void showError(int code, String msg) {
+        switch (code) {
+            case IAccountManager.PW_ERROR:
+                showOrHideLoading(false);
+                mTips.setVisibility(View.VISIBLE);
+                mTips.setTextColor(getContext().getResources().getColor(R.color.error_red));
+                mTips.setText(getContext().getString(R.string.password_error));
+                break;
+            case IAccountManager.SERVER_FAIL:
+                showOrHideLoading(false);
+                mTips.setVisibility(View.VISIBLE);
+                mTips.setTextColor(getContext().getResources().getColor(R.color.error_red));
+                mTips.setText(getContext().getString(R.string.error_server));
+                break;
+        }
+    }
+    /**
+     * 登录成功
+     */
+    @Override
+    public void showLoginSuc() {
+        mLoading.setVisibility(View.GONE);
+        mBtnConfirm.setVisibility(View.GONE);
+        mTips.setVisibility(View.VISIBLE);
+        mTips.setTextColor(getContext().getResources().getColor(R.color.color_text_normal));
+        mTips.setText(getContext().getString(R.string.login_suc));
+        ToastUtil.show(getContext(), getContext().getString(R.string.login_suc));
+        dismiss();
     }
 
     /**
