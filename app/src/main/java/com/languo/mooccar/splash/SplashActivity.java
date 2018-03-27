@@ -1,7 +1,9 @@
 package com.languo.mooccar.splash;
 
+import android.animation.ObjectAnimator;
 import android.content.Intent;
 import android.graphics.drawable.AnimatedVectorDrawable;
+import android.graphics.drawable.VectorDrawable;
 import android.os.Build;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
