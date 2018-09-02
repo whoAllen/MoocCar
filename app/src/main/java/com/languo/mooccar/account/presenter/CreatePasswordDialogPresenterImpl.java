@@ -1,16 +1,13 @@
 package com.languo.mooccar.account.presenter;
 
 
-import android.os.Handler;
-import android.os.Message;
 import android.text.TextUtils;
-import android.view.View;
 
-import com.languo.mooccar.R;
 import com.languo.mooccar.account.model.IAccountManager;
+import com.languo.mooccar.account.model.response.LoginResponse;
+import com.languo.mooccar.account.model.response.RegisterResponse;
 import com.languo.mooccar.account.view.ICreatePasswordDialogView;
-
-import java.lang.ref.WeakReference;
+import com.languo.mooccar.common.databus.RegisterBus;
 
 /**
  * Created by YuLiang on 2018/3/3.
@@ -21,38 +18,10 @@ public class CreatePasswordDialogPresenterImpl implements ICreatePasswordDialogP
     private IAccountManager accountManager;
     private ICreatePasswordDialogView view;
 
-    static class MyHandler extends Handler {
-        WeakReference<CreatePasswordDialogPresenterImpl> refContext;
-        public MyHandler(CreatePasswordDialogPresenterImpl context) {
-            refContext = new WeakReference(context);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            CreatePasswordDialogPresenterImpl presenter = refContext.get();
-            super.handleMessage(msg);
-            switch (msg.what) {
-                case IAccountManager.LOGIN_SUC:
-                    presenter.view.showLoginSuc();
-                    break;
-                case IAccountManager.REGISTER_SUC:
-                    presenter.view.showRegisterSuc();
-                    break;
-                case IAccountManager.SERVER_FAIL:
-                    presenter.view.showError(IAccountManager.SERVER_FAIL, "");
-                    break;
-                case IAccountManager.PW_ERROR:
-                    presenter.view.showError(IAccountManager.PW_ERROR, "");
-                    break;
-            }
-        }
-    }
 
     public CreatePasswordDialogPresenterImpl(IAccountManager accountManager, ICreatePasswordDialogView view) {
         this.accountManager = accountManager;
         this.view = view;
-
-        accountManager.setHandler(new MyHandler(this));
     }
 
     @Override
@@ -78,5 +47,35 @@ public class CreatePasswordDialogPresenterImpl implements ICreatePasswordDialogP
     @Override
     public void login(String phone, String password) {
         accountManager.login(phone, password);
+    }
+
+    @RegisterBus
+    public void onRegisterResponse(RegisterResponse registerResponse) {
+        switch (registerResponse.getCode()) {
+            case IAccountManager.REGISTER_SUC:
+                view.showRegisterSuc();
+                break;
+            case IAccountManager.LOGIN_SUC:
+                view.showLoginSuc();
+                break;
+            case IAccountManager.SERVER_FAIL:
+                view.showError(registerResponse.getCode(), registerResponse.getMsg());
+                break;
+        }
+    }
+
+    @RegisterBus
+    public void onLoginResponse(LoginResponse loginResponse) {
+        switch (loginResponse.getCode()) {
+            case IAccountManager.REGISTER_SUC:
+                view.showRegisterSuc();
+                break;
+            case IAccountManager.LOGIN_SUC:
+                view.showLoginSuc();
+                break;
+            case IAccountManager.SERVER_FAIL:
+                view.showError(loginResponse.getCode(), loginResponse.getMsg());
+                break;
+        }
     }
 }

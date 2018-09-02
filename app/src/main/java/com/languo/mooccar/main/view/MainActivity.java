@@ -11,6 +11,7 @@ import com.languo.mooccar.account.model.IAccountManager;
 import com.languo.mooccar.account.view.PhoneInputDialog;
 import com.languo.mooccar.account.model.response.Account;
 import com.languo.mooccar.account.model.response.LoginResponse;
+import com.languo.mooccar.common.databus.RxBus;
 import com.languo.mooccar.common.http.IHttpClient;
 import com.languo.mooccar.common.http.IRequest;
 import com.languo.mooccar.common.http.IResponse;
@@ -47,6 +48,8 @@ public class MainActivity extends AppCompatActivity implements IMainView{
         mainPresenter = new MainPresenterImpl(this, accountManager);
 //        checkLoginState();
         mainPresenter.loginByToken();
+
+        RxBus.getInstance().register(mainPresenter);
     }
 
     /**
@@ -104,5 +107,11 @@ public class MainActivity extends AppCompatActivity implements IMainView{
     @Override
     public void showLoginSuc() {
         ToastUtil.show(this, getString(R.string.login_suc));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        RxBus.getInstance().unRegister(mainPresenter);
     }
 }

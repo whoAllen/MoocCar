@@ -24,6 +24,7 @@ import com.languo.mooccar.account.model.AccountManagerImpl;
 import com.languo.mooccar.account.model.IAccountManager;
 import com.languo.mooccar.account.presenter.ISmsCodeDialogPresenter;
 import com.languo.mooccar.account.presenter.SmsCodeDialogPresenterImpl;
+import com.languo.mooccar.common.databus.RxBus;
 import com.languo.mooccar.common.http.IHttpClient;
 import com.languo.mooccar.common.http.IRequest;
 import com.languo.mooccar.common.http.IResponse;
@@ -87,6 +88,7 @@ public class SmsCodeDialog extends Dialog implements ISmsCodeDialogView{
         AccountManagerImpl accountManager = new AccountManagerImpl(httpClient, preferencesDao);
         presenter = new SmsCodeDialogPresenterImpl(this, accountManager);
 
+        RxBus.getInstance().register(presenter);
     }
 
     @Override

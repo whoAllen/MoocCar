@@ -35,11 +35,6 @@ public interface IAccountManager {
     static final int TOKEN_INVALID = -6;
 
     /**
-     * 设置Handler
-     */
-    void setHandler(Handler handler);
-
-    /**
      * 下发验证码
      */
     void fetchSMSCode(String phone);

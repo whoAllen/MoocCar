@@ -20,6 +20,7 @@ import com.languo.mooccar.account.model.AccountManagerImpl;
 import com.languo.mooccar.account.model.IAccountManager;
 import com.languo.mooccar.account.model.response.LoginResponse;
 import com.languo.mooccar.account.presenter.LoginDialogPresenterImpl;
+import com.languo.mooccar.common.databus.RxBus;
 import com.languo.mooccar.common.http.IHttpClient;
 import com.languo.mooccar.common.http.IRequest;
 import com.languo.mooccar.common.http.IResponse;
@@ -69,6 +70,9 @@ public class LoginDialog extends Dialog implements ILoginDialogView{
         View rootView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_login_input, null);
         setContentView(rootView);
         initView();
+
+        //注册 Presenter
+        RxBus.getInstance().register(loginDialogPresenter);
     }
 
     /**
@@ -139,6 +143,13 @@ public class LoginDialog extends Dialog implements ILoginDialogView{
         mTips.setText(getContext().getString(R.string.login_suc));
         ToastUtil.show(getContext(), getContext().getString(R.string.login_suc));
         dismiss();
+    }
+
+    @Override
+    public void dismiss() {
+        super.dismiss();
+        //注销 RxBus
+        RxBus.getInstance().unRegister(loginDialogPresenter);
     }
 
     /**

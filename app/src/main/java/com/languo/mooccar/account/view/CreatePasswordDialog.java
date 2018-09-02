@@ -15,6 +15,7 @@ import com.languo.mooccar.R;
 import com.languo.mooccar.account.model.AccountManagerImpl;
 import com.languo.mooccar.account.model.IAccountManager;
 import com.languo.mooccar.account.presenter.CreatePasswordDialogPresenterImpl;
+import com.languo.mooccar.common.databus.RxBus;
 import com.languo.mooccar.common.http.IHttpClient;
 import com.languo.mooccar.common.http.impl.OkHttpClientImpl;
 import com.languo.mooccar.common.storage.SharedPreferencesDao;
@@ -57,6 +58,9 @@ public class CreatePasswordDialog extends Dialog implements ICreatePasswordDialo
 
         mRoot = LayoutInflater.from(getContext()).inflate(R.layout.dialog_create_pw, null);
         setContentView(mRoot);
+
+        //注册 Presenter
+        RxBus.getInstance().register(presenter);
     }
 
 
